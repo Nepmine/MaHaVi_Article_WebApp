@@ -28,7 +28,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { postAPI, handleApiError } from '../services/apiService';
-import { uploadImageToFirebase } from '../utils/firebase';
 
 const CreatePost = () => {
   const navigate = useNavigate();
@@ -115,31 +114,35 @@ const CreatePost = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.content.trim()) {
-      setError('Title and content are required');
+      setError("Title and content are required");
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
-      let imageUrl = formData.imageUrl;
+      const data = new FormData();
+      data.append("title", formData.title);
+      data.append("content", formData.content);
+      data.append("description", formData.description);
+      data.append("category", formData.category);
+      data.append("googleId", "current-user-google-id"); // TODO: replace with real auth
 
-      // Upload image if selected
+      // append tags as JSON string (or individually if backend expects array fields)
+      data.append("tags", JSON.stringify(formData.tags));
+
       if (imageFile) {
-        imageUrl = await uploadImageToFirebase(imageFile, 'articles');
+        data.append("image", imageFile);
       }
 
-      const postData = {
-        ...formData,
-        imageUrl,
-        googleId: 'current-user-google-id' // This should come from auth context
-      };
+      console.log("POst data is ::", data, imageFile)
 
-      await postAPI.createPost(postData);
-      navigate('/my-articles');
+      await postAPI.createPost(data);
+      // await postAPI.createPost(postData);
+      navigate("/my-articles");
     } catch (err) {
       setError(handleApiError(err));
     } finally {
@@ -149,13 +152,18 @@ const CreatePost = () => {
 
   const handlePreview = () => {
     // Open preview in new tab or modal
-    console.log('Preview:', formData);
+    console.log("Preview:", formData);
   };
 
   return (
     <Container maxWidth="md">
       <Box sx={{ py: 2 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ fontWeight: 700 }}
+        >
           Create New Article
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -220,12 +228,14 @@ const CreatePost = () => {
               <Typography variant="h6" gutterBottom>
                 Tags
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
                 <TextField
                   label="Add tag"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), handleAddTag())
+                  }
                   size="small"
                   sx={{ flexGrow: 1 }}
                 />
@@ -255,7 +265,7 @@ const CreatePost = () => {
               <Typography variant="h6" gutterBottom>
                 Featured Image
               </Typography>
-              
+
               {imagePreview ? (
                 <Card sx={{ maxWidth: 400, mb: 2 }}>
                   <CardMedia
@@ -264,7 +274,9 @@ const CreatePost = () => {
                     image={imagePreview}
                     alt="Article preview"
                   />
-                  <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Box
+                    sx={{ p: 1, display: "flex", justifyContent: "flex-end" }}
+                  >
                     <IconButton onClick={handleRemoveImage} color="error">
                       <Delete />
                     </IconButton>
@@ -273,15 +285,15 @@ const CreatePost = () => {
               ) : (
                 <Box
                   sx={{
-                    border: '2px dashed',
-                    borderColor: 'grey.300',
+                    border: "2px dashed",
+                    borderColor: "grey.300",
                     borderRadius: 2,
                     p: 3,
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      backgroundColor: 'action.hover',
+                    textAlign: "center",
+                    cursor: "pointer",
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      backgroundColor: "action.hover",
                     },
                   }}
                   component="label"
@@ -290,9 +302,11 @@ const CreatePost = () => {
                     type="file"
                     accept="image/*"
                     onChange={handleImageSelect}
-                    style={{ display: 'none' }}
+                    style={{ display: "none" }}
                   />
-                  <CloudUpload sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                  <CloudUpload
+                    sx={{ fontSize: 48, color: "grey.400", mb: 2 }}
+                  />
                   <Typography variant="h6" color="text.secondary">
                     Click to upload featured image
                   </Typography>
@@ -319,7 +333,7 @@ const CreatePost = () => {
             />
 
             {/* Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
               <Button
                 variant="outlined"
                 onClick={handlePreview}
@@ -331,10 +345,12 @@ const CreatePost = () => {
                 type="submit"
                 variant="contained"
                 disabled={loading}
-                startIcon={loading ? <CircularProgress size={16} /> : <Publish />}
+                startIcon={
+                  loading ? <CircularProgress size={16} /> : <Publish />
+                }
                 sx={{ minWidth: 140 }}
               >
-                {loading ? 'Publishing...' : 'Publish Article'}
+                {loading ? "Publishing..." : "Publish Article"}
               </Button>
             </Box>
           </form>
