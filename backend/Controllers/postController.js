@@ -3,31 +3,79 @@ import { PrismaClient } from '../generated/prisma/index.js'
 // import { PrismaClient } from './generated/prisma'
 // import { ObjectId } from 'bson'
 import { ObjectId } from 'mongodb';
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
+
+
 
 const prisma = new PrismaClient()
 
 // [POST Protected] http://localhost:8000/api/post/createPost
 // Data required: not(likes, authorId)
-export const createPost = async (req, res) => {
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export const createPost = async (req, reply) => {
+  try {
+    const parts = req.parts();
+    let title, headline, article, fileBuffer;
+
+    for await (const part of parts) {
+      if (part.file) {
+        fileBuffer = await part.toBuffer();
+      } else {
+        if (part.fieldname === "title") title = part.value;
+        if (part.fieldname === "headline") headline = part.value;
+        if (part.fieldname === "article") article = part.value;
+      }
+    }
+
     const userResponse = await prisma.user.findFirst({
-        where: { googleId: req.body.googleId }
-    })
-    if (!userResponse) return res.status(403).send("Please Login First !!")
-
-    req.body.likes = 0;
-    req.body.authorId = userResponse.id;
-    const response = await prisma.post.create({
-        data: req.body
-    })
-
-    prisma.user.update({
-        where: { email: req.user.googleId },
-        data: {
-            auther: { set: true }
-        }
+      where: { googleId: req.user.googleId }, 
     });
 
-    return res.status(200).send(response);
+    if (!userResponse) {
+      return reply.code(403).send("Please Login First !!");
+    }
+
+    let imageUrl = null;
+    if (fileBuffer) {
+      imageUrl = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "news_posts" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result.secure_url);
+          }
+        );
+        streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+      });
+    }
+
+    const response = await prisma.post.create({
+      data: {
+        title,
+        article,
+        headline,
+        imageUrl,
+        authorId: userResponse.id,
+        likes: 0,
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: userResponse.id },
+      data: { auther: true },
+    })
+
+    return reply.code(200).send(response);
+  } catch (error) {
+    console.error(error);
+    return reply.code(500).send({ error: "Failed to create post" });
+  }
 };
 
 
