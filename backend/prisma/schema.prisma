@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  googleId  String  @unique
+  email     String  @unique
+  name      String?
+  givenName String?
+  photoUrl  String?
+  // likedPosts Post[]   @relation("LikedPosts")
+  posts     Post[]  @relation("UserPosts")
+  auther    Boolean @default(false)
+
+  // likedPosts Post[]   @relation("UserLikesPosts")
+
+  postIDs    String[] @db.ObjectId
+  likedPosts Post[]   @relation("UserLikedPosts", fields: [postIDs], references: [id])
+}
+
+model Post {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  imageUrl  String?
+  headline  String?
+  article   String
+  author    User     @relation("UserPosts", fields: [authorId], references: [id])
+  authorId  String   @db.ObjectId
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uesrIDs String[] @db.ObjectId
+  posts   User[]   @relation("UserLikedPosts", fields: [uesrIDs], references: [id])
+}
