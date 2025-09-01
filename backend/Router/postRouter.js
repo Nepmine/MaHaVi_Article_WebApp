@@ -1,5 +1,7 @@
 import { createPost, likePost, getHomePosts } from '../Controllers/postController.js';
 import { auth } from '../Middlewares/auth.js'
+import fastifyMultipart from "@fastify/multipart";
+
 
 
 const postSchema = {
@@ -44,11 +46,14 @@ export default async function (fastify, opts) {
 
     // [POST Protected] http://localhost:8000/api/post/post
     // fastify.post('/createPost', { preHandler: auth }, createPost);
-    fastify.post('/createPost', { preHandler: auth, schema: postSchema }, createPost);
+  fastify.register(fastifyMultipart);
+
+  // [POST] create post (with auth + file upload)
+  fastify.post("/createPost", { preHandler: auth }, createPost);
 
     // [POST Protected] http://localhost:8000/api/post/post
     fastify.post('/likePost', { preHandler: auth, schema: likeSchema }, likePost);
 
     // [GET Protected] http://localhost:8000/api/post/getHomePosts
     fastify.get('/getHomePosts', getHomePosts);
-}
+} 
