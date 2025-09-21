@@ -98,7 +98,7 @@ const Login = ({ isLoggedin, changeLoginStatus }) => {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  ArticleHub
+                  IDS News
                 </Typography>
                 <Typography
                   variant="h5"

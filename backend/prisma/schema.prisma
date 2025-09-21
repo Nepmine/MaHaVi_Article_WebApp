@@ -9,34 +9,72 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @id @default(auto()) @map("_id") @db.ObjectId
   googleId  String  @unique
   email     String  @unique
   name      String?
   givenName String?
   photoUrl  String?
-  // likedPosts Post[]   @relation("LikedPosts")
-  posts     Post[]  @relation("UserPosts")
-  auther    Boolean @default(false)
 
-  // likedPosts Post[]   @relation("UserLikesPosts")
+  likedPostIds String[] @db.ObjectId
+  likedPosts   Post[]   @relation(fields: [likedPostIds], references: [postId])
 
-  postIDs    String[] @db.ObjectId
-  likedPosts Post[]   @relation("UserLikedPosts", fields: [postIDs], references: [id])
+  comments Comment[]
+
+  authorProfile Author?
 }
 
 model Post {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  title     String
-  imageUrl  String?
-  headline  String?
-  article   String
-  author    User     @relation("UserPosts", fields: [authorId], references: [id])
-  authorId  String   @db.ObjectId
+  postId        String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  frontImageUrl String?
+  headline      String?
+  content       Segment[] //sorted by Sequence
+
+  author   Author @relation(fields: [authorId], references: [authorId])
+  authorId String @db.ObjectId // just to track not to display
+
   likes     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  uesrIDs String[] @db.ObjectId
-  posts   User[]   @relation("UserLikedPosts", fields: [uesrIDs], references: [id])
+  likedUser String[] @db.ObjectId
+  likedBy   User[]   @relation(fields: [likedUser], references: [userId])
+
+  comments Comment[]
+}
+
+model Author {
+  authorId String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId         String @unique @db.ObjectId
+  generalDetails User   @relation(fields: [userId], references: [userId])
+
+  posts Post[]
+}
+
+type Segment {
+  type    SegmentType
+  content String
+}
+
+enum SegmentType {
+  IMAGE
+  TOPIC
+  NORMAL_TEXT
+}
+
+model Comment {
+  commentId String @id @default(auto()) @map("_id") @db.ObjectId
+  comment   String
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [userId])
+
+  post   Post   @relation(fields: [postId], references: [postId])
+  postId String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  likes     Int      @default(0)
 }

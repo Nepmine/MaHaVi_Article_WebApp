@@ -27,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { postAPI } from '../../services/apiService';
 
 const ArticleCard = ({ article, onLikeUpdate }) => {
+  console.log("Article is :", article)
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [likeCount, setLikeCount] = useState(article.likes || 0);
@@ -171,7 +172,7 @@ const ArticleCard = ({ article, onLikeUpdate }) => {
             alt={article.author?.name}
             sx={{ width: 32, height: 32, mr: 1 }}
           >
-            {article.author?.name?.[0]}
+            {article.author?.name?.[0]}                                    -------------------------------------
           </Avatar>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="body2" fontWeight={500}>
