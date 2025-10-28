@@ -506,10 +506,10 @@ export const addTrending = async (req, reply) => {
       where: { postId },
       data: { trending: true },
     });
-    return reply.status(200).send(postId); // [Modified]
+    return reply.status(200).send({ success: true, postId });
   } catch (ex) {
     console.log("Exception while adding to trending ...", ex);
-    return reply.status(500).send("Internal Server Error"); // [Modified]
+    return reply.status(500).send({ error: "Internal Server Error" });
   }
 };
 
@@ -517,9 +517,7 @@ export const addTrending = async (req, reply) => {
 // Data required: not(postId)  ::  likes accroding to liked post stored in database
 export const removeTrending = async (req, reply) => {
   try {
-    console.log("got here .............. A");
     const { postId } = req.params;
-    console.log("got here .............. B", req.params);
 
     const userResponse = await prisma.user.findFirst({
       where: { googleId: req.user.sub },
@@ -533,25 +531,29 @@ export const removeTrending = async (req, reply) => {
         },
       },
     });
-    console.log("got here .............. C", userResponse);
 
-    if (!userResponse) return reply.code(403).send("Please Login First !!");
+    if (!userResponse)
+      return reply.code(403).send({ error: "Please Login First !!" });
     if (!userResponse.authorProfile)
-      return reply.code(401).send("You don't have permission !!");
+      return reply.code(401).send({ error: "You don't have permission !!" });
 
     const isOwner = userResponse.authorProfile.posts.some(
       (post) => post.postId === postId
     );
     if (!isOwner)
-      return reply.code(403).send("Only owner can modify trending !!");
+      return reply
+        .code(403)
+        .send({ error: "Only owner can modify trending !!" });
 
     await prisma.post.update({
       where: { postId },
       data: { trending: false },
     });
-    return reply.status(200).send(postId); // [Modified]
+
+    // ✅ Return JSON object instead of plain string
+    return reply.status(200).send({ success: true, postId });
   } catch (ex) {
     console.log("Exception while removing from trending ...", ex);
-    return reply.status(500).send("Internal Server Error"); // [Modified]
+    return reply.status(500).send({ error: "Internal Server Error" });
   }
 };
