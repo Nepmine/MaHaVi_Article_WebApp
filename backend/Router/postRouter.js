@@ -8,6 +8,9 @@ import {
   comment,
   editComment,
   deleteComment,
+  allTrendings,
+  addTrending,
+  removeTrending,
 } from "../Controllers/postController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -77,11 +80,24 @@ export default async function (fastify, opts) {
   fastify.get("/getPost/:postId", getPost);
 
   // [GET] http://localhost:8000/api/post/comment
-  fastify.post("/comment",{ preHandler: auth }, comment);
+  fastify.post("/comment", { preHandler: auth }, comment);
 
   // [GET] http://localhost:8000/api/post/editComment
-  fastify.post("/editComment",{ preHandler: auth }, editComment);
+  fastify.post("/editComment", { preHandler: auth }, editComment);
 
   // [GET] http://localhost:8000/api/post/deleteComment
-  fastify.post("/deleteComment",{ preHandler: auth }, deleteComment);
+  fastify.post("/deleteComment", { preHandler: auth }, deleteComment);
+
+  // [GET] http://localhost:8000/api/get/allTrendings
+  fastify.get("/trending", allTrendings);
+
+  // [GET] http://localhost:8000/api/post/trending/{postId}
+  fastify.post("/trending/:postId", { preHandler: auth }, addTrending);
+
+  // [GET] http://localhost:8000/api/post/trending/{postId}
+  fastify.delete(
+    "/trending/:postId",
+    { preHandler: auth },
+    removeTrending
+  );
 }

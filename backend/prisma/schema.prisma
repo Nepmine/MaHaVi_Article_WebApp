@@ -20,7 +20,7 @@ model User {
   likedPosts   Post[]   @relation(fields: [likedPostIds], references: [postId])
 
   comments Comment[]
- 
+
   authorProfile Author?
 }
 
@@ -42,6 +42,7 @@ model Post {
   likedBy   User[]   @relation(fields: [likedUser], references: [userId])
 
   comments Comment[]
+  trending Boolean   @default(false)
 }
 
 model Author {

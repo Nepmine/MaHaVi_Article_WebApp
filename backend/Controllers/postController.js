@@ -239,6 +239,7 @@ export const getHomePosts = async (req, res) => {
         likes: true,
         createdAt: true,
         updatedAt: true,
+        trending: true,
 
         // include comments with only the fields we want
         comments: {
@@ -440,5 +441,117 @@ export const deleteComment = async (req, reply) => {
   } catch (ex) {
     console.error("Exception while deleting comment:", ex);
     return reply.code(500).send({ error: "Failed to delete comment" });
+  }
+};
+
+// [GET] http://localhost:8000/api/post/deleteComment
+// Data required: not(postId)  ::  likes accroding to liked post stored in database
+export const allTrendings = async (req, reply) => {
+  try {
+    const posts = await prisma.post.findMany({
+      where: { trending: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        postId: true,
+        title: true,
+        headline: true,
+        frontImageUrl: true,
+        authorId: true,
+        likes: true,
+        createdAt: true,
+        updatedAt: true,
+        trending: true,
+        comments: { select: { commentId: true } },
+        author: { select: { authorId: true } },
+      },
+    });
+    return reply.status(200).send(posts); // [Modified] changed res → reply
+  } catch (ex) {
+    console.log("Exception while fetching trending posts ...", ex);
+    return reply
+      .status(500)
+      .send("Internal Server Error fetching trending posts"); // [Modified]
+  }
+};
+
+// [post] http://localhost:8000/api/post/addTrending/{postId}
+// Data required: not(postId)  ::  likes accroding to liked post stored in database
+export const addTrending = async (req, reply) => {
+  try {
+    const { postId } = req.params;
+    const userResponse = await prisma.user.findFirst({
+      where: { googleId: req.user.sub },
+      include: {
+        authorProfile: {
+          include: {
+            posts: {
+              select: { postId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!userResponse) return reply.code(403).send("Please Login First !!");
+    if (!userResponse.authorProfile)
+      return reply.code(401).send("You don't have permission !!");
+
+    const isOwner = userResponse.authorProfile.posts.some(
+      (post) => post.postId === postId
+    );
+    if (!isOwner)
+      return reply.code(403).send("Only owner can modify trending !!");
+
+    await prisma.post.update({
+      where: { postId },
+      data: { trending: true },
+    });
+    return reply.status(200).send(postId); // [Modified]
+  } catch (ex) {
+    console.log("Exception while adding to trending ...", ex);
+    return reply.status(500).send("Internal Server Error"); // [Modified]
+  }
+};
+
+// [post] http://localhost:8000/api/post/removeTrending/{postId}
+// Data required: not(postId)  ::  likes accroding to liked post stored in database
+export const removeTrending = async (req, reply) => {
+  try {
+    console.log("got here .............. A");
+    const { postId } = req.params;
+    console.log("got here .............. B", req.params);
+
+    const userResponse = await prisma.user.findFirst({
+      where: { googleId: req.user.sub },
+      include: {
+        authorProfile: {
+          include: {
+            posts: {
+              select: { postId: true },
+            },
+          },
+        },
+      },
+    });
+    console.log("got here .............. C", userResponse);
+
+    if (!userResponse) return reply.code(403).send("Please Login First !!");
+    if (!userResponse.authorProfile)
+      return reply.code(401).send("You don't have permission !!");
+
+    const isOwner = userResponse.authorProfile.posts.some(
+      (post) => post.postId === postId
+    );
+    if (!isOwner)
+      return reply.code(403).send("Only owner can modify trending !!");
+
+    await prisma.post.update({
+      where: { postId },
+      data: { trending: false },
+    });
+    return reply.status(200).send(postId); // [Modified]
+  } catch (ex) {
+    console.log("Exception while removing from trending ...", ex);
+    return reply.status(500).send("Internal Server Error"); // [Modified]
   }
 };

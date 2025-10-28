@@ -23,9 +23,16 @@ const fastify = Fastify({
   },
 });
 
+// fastify.register(fastifyCors, {
+//   // origin: process.env.CROS_ORIGIN_WHITELIST,
+//   origin: true,
+//   credentials: true,
+// });
+
 fastify.register(fastifyCors, {
-  // origin: process.env.CROS_ORIGIN_WHITELIST,
-  origin: true,
+  origin: ["http://localhost:5173", "http://localhost:3000"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 });
 
