@@ -20,16 +20,16 @@ model User {
   likedPosts   Post[]   @relation(fields: [likedPostIds], references: [postId])
 
   comments Comment[]
-
+ 
   authorProfile Author?
 }
 
 model Post {
-  postId        String    @id @default(auto()) @map("_id") @db.ObjectId
+  postId        String  @id @default(auto()) @map("_id") @db.ObjectId
   title         String
-  frontImageUrl String?
-  headline      String?
-  content       Segment[] //sorted by Sequence
+  headline      String
+  frontImageUrl String? //url to be stored in the db
+  content       String?
 
   author   Author @relation(fields: [authorId], references: [authorId])
   authorId String @db.ObjectId // just to track not to display
@@ -51,17 +51,6 @@ model Author {
   generalDetails User   @relation(fields: [userId], references: [userId])
 
   posts Post[]
-}
-
-type Segment {
-  type    SegmentType
-  content String
-}
-
-enum SegmentType {
-  IMAGE
-  TOPIC
-  NORMAL_TEXT
 }
 
 model Comment {

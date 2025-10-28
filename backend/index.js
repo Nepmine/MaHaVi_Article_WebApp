@@ -5,6 +5,8 @@ import userRoutes from "./Router/userRouter.js";
 import postRoutes from "./Router/postRouter.js";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUI from "@fastify/swagger-ui";
+import formbody from "@fastify/formbody";
+import multipart from "@fastify/multipart";
 
 const fastify = Fastify({
   logger: {
@@ -31,6 +33,16 @@ fastify.register(fastifyCookie);
 
 // Register Swagger UI
 fastify.register(fastifySwagger);
+
+fastify.register(formbody);
+fastify.register(multipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 10,
+  },
+  attachFieldsToBody: true,
+});
+
 fastify.register(fastifySwaggerUI, {
   routePrefix: "/swagger",
 });
@@ -45,7 +57,6 @@ fastify.register(userRoutes, { prefix: "/api/user" });
 fastify.register(postRoutes, { prefix: "/api/post" });
 
 fastify.get("/ping", async function handler(req, res) {
-  console.log("req is :", req.cookies.access_token);
   return res.status(200).send("PONG");
 });
 // Run the server!

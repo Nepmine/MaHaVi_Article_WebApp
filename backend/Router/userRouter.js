@@ -3,6 +3,8 @@ import {
   userDetails,
   myBlogs,
   myLikedPosts,
+  makeAuthor,
+  isAuthor,
 } from "../Controllers/userController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -31,8 +33,11 @@ const loginSchema = {
 };
 
 export default async function (fastify, opts) {
-  // [POST] http://localhost:8000/api/user/userLogin
-  fastify.post("/login", { preHandler: auth }, userLogin);
+  // [GET] http://localhost:8000/api/user/userLogin
+  fastify.get("/userLogin", { preHandler: auth }, userLogin);
+
+  // [POST] http://localhost:8000/api/user/makeAuthor
+  fastify.post("/makeAuthor", { preHandler: auth }, makeAuthor);
 
   // [GET] http://localhost:8000/api/user/protected/ping
   fastify.get("/userDetails", { preHandler: auth }, userDetails);
@@ -42,4 +47,7 @@ export default async function (fastify, opts) {
 
   // [GET] http://localhost:8000/api/user/protected/ping
   fastify.get("/myLikedPosts", { preHandler: auth }, myLikedPosts);
+
+  // [GET] http://localhost:8000/api/user/protected/ping
+  fastify.get("/isAuthor", { preHandler: auth }, isAuthor);
 }
