@@ -14,6 +14,7 @@ cloudinary.config({
 export const createPost = async (req, reply) => {
   try {
     // [Modified] Fetch user with authorProfile relation included
+    const { type } = req.params;
     const userResponse = await prisma.user.findFirst({
       where: { googleId: req.user.sub },
       include: { authorProfile: true },
@@ -34,6 +35,7 @@ export const createPost = async (req, reply) => {
         frontImageUrl,
         content, // [Modified] use updated segments, not original content
         author: { connect: { authorId: userResponse.authorProfile.authorId } }, // [Added] connect post to author
+        article: type == "article",
       },
     });
 
@@ -240,6 +242,7 @@ export const getHomePosts = async (req, res) => {
         createdAt: true,
         updatedAt: true,
         trending: true,
+        article: true,
 
         // include comments with only the fields we want
         comments: {
@@ -555,5 +558,33 @@ export const removeTrending = async (req, reply) => {
   } catch (ex) {
     console.log("Exception while removing from trending ...", ex);
     return reply.status(500).send({ error: "Internal Server Error" });
+  }
+};
+
+// [GET] http://localhost:8000/api/post/allArticles
+// Data required: not(postId)  ::  likes accroding to liked post stored in database
+export const allArticles = async (req, reply) => {
+  try {
+    const posts = await prisma.post.findMany({
+      where: { article: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        postId: true,
+        title: true,
+        headline: true,
+        frontImageUrl: true,
+        authorId: true,
+        likes: true,
+        createdAt: true,
+        updatedAt: true,
+        trending: true,
+        comments: { select: { commentId: true } },
+        author: { select: { authorId: true } },
+      },
+    });
+    return reply.status(200).send(posts); // [Modified] changed res → reply
+  } catch (ex) {
+    console.log("Exception while fetching articles ...", ex);
+    return reply.status(500).send("Internal Server Error fetching articles"); // [Modified]
   }
 };

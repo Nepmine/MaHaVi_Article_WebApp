@@ -43,6 +43,7 @@ model Post {
 
   comments Comment[]
   trending Boolean   @default(false)
+  article  Boolean   @default(false)
 }
 
 model Author {

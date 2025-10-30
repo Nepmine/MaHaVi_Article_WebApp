@@ -11,6 +11,7 @@ import {
   allTrendings,
   addTrending,
   removeTrending,
+  allArticles,
 } from "../Controllers/postController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -55,7 +56,7 @@ const likeSchema = {
 export default async function (fastify, opts) {
   // [POST Protected] http://localhost:8000/api/post/createPost
   fastify.post(
-    "/createPost",
+    "/createPost/:type",
     { preHandler: auth, schema: postSchema },
     createPost
   );
@@ -95,9 +96,8 @@ export default async function (fastify, opts) {
   fastify.post("/trending/:postId", { preHandler: auth }, addTrending);
 
   // [GET] http://localhost:8000/api/post/trending/{postId}
-  fastify.delete(
-    "/trending/:postId",
-    { preHandler: auth },
-    removeTrending
-  );
+  fastify.delete("/trending/:postId", { preHandler: auth }, removeTrending);
+
+  // [GET] http://localhost:8000/api/post/allArticles
+  fastify.get("/allArticles", allArticles);
 }
