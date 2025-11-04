@@ -50,6 +50,77 @@ export const createPost = async (req, reply) => {
   }
 };
 
+
+
+export const createGallery = async (req, reply) => {
+  try {
+    const userResponse = await prisma.user.findFirst({
+      where: { googleId: req.user.sub },
+      include: { authorProfile: true },
+    });
+
+    if (!userResponse) return reply.code(403).send("Please Login First !!");
+    if (!userResponse.authorProfile)
+      return reply.code(401).send("You don't have permission !!");
+
+    const { images } = req.body; // expecting array of URLs
+
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return reply.code(400).send("Images array is required");
+    }
+
+    const newGallery = await prisma.gallery.create({
+      data: {
+        images,
+        author: { connect: { authorId: userResponse.authorProfile.authorId } },
+      },
+    });
+
+    return reply.code(200).send(newGallery);
+  } catch (error) {
+    console.error("Prisma/Gallery creation error:", error);
+    return reply.code(500).send({
+      error: "Failed to create gallery",
+      message: error.message,
+      stack: error.stack,
+    });
+  }
+};
+
+
+export const getAllGalleries = async (req, reply) => {
+  try {
+    const galleries = await prisma.gallery.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: {
+          include: {
+            generalDetails: {
+              select: {
+                name: true,
+                photoUrl: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!galleries || galleries.length === 0) {
+      return reply.code(404).send("No galleries found");
+    }
+
+    return reply.code(200).send(galleries);
+  } catch (error) {
+    console.error("Prisma/Get galleries error:", error);
+    return reply.code(500).send({
+      error: "Failed to fetch galleries",
+      message: error.message,
+    });
+  }
+};
+
 // [POST Protected] http://localhost:8000/api/post/updatePost
 // Data required: postId
 export const updatePost = async (req, reply) => {
@@ -224,6 +295,77 @@ export const likePost = async (req, res) => {
     return res.status(500).send("Failed to update like status");
   }
 };
+
+export const likeGallery = async (req, res) => {
+  const { galleryId } = req.body;
+  const googleId = req.user.sub;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { googleId },
+      select: { userId: true },
+    });
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    // Fetch gallery details
+    const gallery = await prisma.gallery.findUnique({
+      where: { galleryId },
+      select: { likes: true },
+    });
+
+    if (!gallery) {
+      return res.status(404).send("Gallery not found");
+    }
+
+    // Check if user has already liked this gallery
+    const userLiked = await prisma.galleryLike.findFirst({
+      where: {
+        galleryId,
+        userId: user.userId,
+      },
+    });
+
+    if (userLiked) {
+      // Unlike
+      await prisma.galleryLike.delete({
+        where: { id: userLiked.id },
+      });
+
+      await prisma.gallery.update({
+        where: { galleryId },
+        data: {
+          likes: { decrement: 1 },
+        },
+      });
+
+      return res.status(200).send("Unliked");
+    } else {
+      // Like
+      await prisma.galleryLike.create({
+        data: {
+          userId: user.userId,
+          galleryId,
+        },
+      });
+
+      await prisma.gallery.update({
+        where: { galleryId },
+        data: {
+          likes: { increment: 1 },
+        },
+      });
+
+      return res.status(200).send("Liked");
+    }
+  } catch (error) {
+    console.error("Gallery like error:", error);
+    return res.status(500).send("Failed to update like status");
+  }
+};
+
 
 // [GET] http://localhost:8000/api/post/getHomePosts
 // Data required: postId

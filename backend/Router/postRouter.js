@@ -12,6 +12,8 @@ import {
   addTrending,
   removeTrending,
   allArticles,
+  createGallery,
+  getAllGalleries,
 } from "../Controllers/postController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -100,4 +102,12 @@ export default async function (fastify, opts) {
 
   // [GET] http://localhost:8000/api/post/allArticles
   fastify.get("/allArticles", allArticles);
+
+  fastify.get("/getAllGalleries",getAllGalleries);
+
+  fastify.post("/creategallery",{ preHandler: auth },createGallery);
+
+
+ 
+
 }

@@ -20,19 +20,21 @@ model User {
   likedPosts   Post[]   @relation(fields: [likedPostIds], references: [postId])
 
   comments Comment[]
-
   authorProfile Author?
+
+  // 👇 Opposite relation field for GalleryLike
+  galleryLikes GalleryLike[]
 }
 
 model Post {
   postId        String  @id @default(auto()) @map("_id") @db.ObjectId
   title         String
   headline      String
-  frontImageUrl String? //url to be stored in the db
+  frontImageUrl String?
   content       String?
 
   author   Author @relation(fields: [authorId], references: [authorId])
-  authorId String @db.ObjectId // just to track not to display
+  authorId String @db.ObjectId
 
   likes     Int      @default(0)
   createdAt DateTime @default(now())
@@ -52,7 +54,9 @@ model Author {
   userId         String @unique @db.ObjectId
   generalDetails User   @relation(fields: [userId], references: [userId])
 
-  posts Post[]
+  posts    Post[]
+  // 👇 Opposite relation field for Gallery
+  galleries Gallery[]
 }
 
 model Comment {
@@ -68,4 +72,29 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   likes     Int      @default(0)
+}
+
+model Gallery {
+  galleryId String   @id @default(auto()) @map("_id") @db.ObjectId
+  images    String[] // array of image URLs
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   Author @relation(fields: [authorId], references: [authorId])
+  authorId String @db.ObjectId
+
+  // 👇 Opposite relation for GalleryLike
+  galleryLikes GalleryLike[]
+}
+
+model GalleryLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  galleryId String   @db.ObjectId
+
+  user    User    @relation(fields: [userId], references: [userId])
+  gallery Gallery @relation(fields: [galleryId], references: [galleryId])
+
+  @@unique([userId, galleryId]) // prevent duplicate likes
 }
