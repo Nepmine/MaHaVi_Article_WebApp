@@ -14,6 +14,7 @@ import {
   allArticles,
   createGallery,
   getAllGalleries,
+  likeGallery,
 } from "../Controllers/postController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -106,6 +107,7 @@ export default async function (fastify, opts) {
   fastify.get("/getAllGalleries",getAllGalleries);
 
   fastify.post("/creategallery",{ preHandler: auth },createGallery);
+    fastify.post("/likeGallery", { preHandler: auth }, likeGallery);
 
 
  
