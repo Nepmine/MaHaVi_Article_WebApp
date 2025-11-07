@@ -14,6 +14,9 @@ import {
   allArticles,
   createGallery,
   getAllGalleries,
+  deleteGallery,
+  deleteGalleryImage,
+  likeGallery,
 } from "../Controllers/postController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -103,11 +106,17 @@ export default async function (fastify, opts) {
   // [GET] http://localhost:8000/api/post/allArticles
   fastify.get("/allArticles", allArticles);
 
-  fastify.get("/getAllGalleries",getAllGalleries);
+  fastify.get("/getAllGalleries", getAllGalleries);
 
-  fastify.post("/creategallery",{ preHandler: auth },createGallery);
+  fastify.post("/creategallery", { preHandler: auth }, createGallery);
 
+  fastify.post("/gallery/likeGallery", { preHandler: auth }, likeGallery);
 
- 
+  fastify.delete("/galleries/:galleryId", { preHandler: auth }, deleteGallery);
 
+  fastify.delete(
+    "/galleries/:galleryId/image",
+    { preHandler: auth },
+    deleteGalleryImage
+  );
 }

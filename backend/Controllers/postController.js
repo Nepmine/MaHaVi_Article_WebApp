@@ -50,8 +50,8 @@ export const createPost = async (req, reply) => {
   }
 };
 
-
-
+// [POST Protected] http://localhost:8000/api/post/createGallery
+// Data required: images
 export const createGallery = async (req, reply) => {
   try {
     const userResponse = await prisma.user.findFirst({
@@ -87,7 +87,7 @@ export const createGallery = async (req, reply) => {
   }
 };
 
-
+// [GET] http://localhost:8000/api/post/getAllGalleries
 export const getAllGalleries = async (req, reply) => {
   try {
     const galleries = await prisma.gallery.findMany({
@@ -116,6 +116,161 @@ export const getAllGalleries = async (req, reply) => {
     console.error("Prisma/Get galleries error:", error);
     return reply.code(500).send({
       error: "Failed to fetch galleries",
+      message: error.message,
+    });
+  }
+};
+
+export const likeGallery = async (req, reply) => {
+  const { galleryId } = req.body;
+  const googleId = req.user.sub;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { googleId },
+      select: { userId: true },
+    });
+
+    if (!user) {
+      return reply.code(404).send({ error: "User not found" });
+    }
+
+    const gallery = await prisma.gallery.findUnique({
+      where: { galleryId },
+      select: { likes: true },
+    });
+
+    if (!gallery) {
+      return reply.code(404).send({ error: "Gallery not found" });
+    }
+
+    // Check if user has already liked this gallery
+    const existingLike = await prisma.galleryLike.findFirst({
+      where: { galleryId, userId: user.userId },
+    });
+
+    let updatedGallery;
+
+    if (existingLike) {
+      // Unlike
+      await prisma.galleryLike.delete({
+        where: { id: existingLike.id },
+      });
+
+      updatedGallery = await prisma.gallery.update({
+        where: { galleryId },
+        data: { likes: { decrement: 1 } },
+        select: { likes: true },
+      });
+
+      return reply.code(200).send({
+        message: "Unliked",
+        likes: updatedGallery.likes,
+      });
+    } else {
+      // Like
+      await prisma.galleryLike.create({
+        data: { userId: user.userId, galleryId },
+      });
+
+      updatedGallery = await prisma.gallery.update({
+        where: { galleryId },
+        data: { likes: { increment: 1 } },
+        select: { likes: true },
+      });
+
+      return reply.code(200).send({
+        message: "Liked",
+        likes: updatedGallery.likes,
+      });
+    }
+  } catch (error) {
+    console.error("Gallery like error:", error);
+    return reply.code(500).send({
+      error: "Failed to update like status",
+      details: error.message,
+    });
+  }
+};
+
+// [DELETE] http://localhost:8000/api/post/deleteGallery/:galleryId
+export const deleteGallery = async (req, reply) => {
+  try {
+    const { galleryId } = req.params;
+
+    const gallery = await prisma.gallery.findUnique({
+      where: { galleryId },
+    });
+
+    if (!gallery) {
+      return reply.code(404).send({ error: "No gallery found with that ID" });
+    }
+
+    const deletedGallery = await prisma.gallery.delete({
+      where: { galleryId },
+    });
+
+    await prisma.galleryLike.deleteMany({
+      where: { galleryId },
+    });
+
+    return reply.code(200).send({
+      message: "Gallery deleted successfully",
+      deletedGallery,
+    });
+  } catch (error) {
+    console.error("Prisma/Delete gallery error:", error);
+    return reply.code(500).send({
+      error: "Failed to delete gallery",
+      message: error.message,
+    });
+  }
+};
+
+// [DELETE] /api/post/deleteGalleryImage/:galleryId
+export const deleteGalleryImage = async (req, reply) => {
+  try {
+    const { galleryId } = req.params;
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return reply.code(400).send({ message: "Image URL is required" });
+    }
+
+    // Step 1: Fetch the gallery
+    const gallery = await prisma.gallery.findUnique({
+      where: { galleryId },
+    });
+
+    if (!gallery) {
+      return reply.code(404).send({ message: "No gallery found with that ID" });
+    }
+
+    // Step 2: Check if the image exists in the array
+    if (!gallery.images.includes(imageUrl)) {
+      return reply
+        .code(404)
+        .send({ message: "Image not found in this gallery" });
+    }
+
+    // Step 3: Remove that image from the array
+    const updatedImages = gallery.images.filter((img) => img !== imageUrl);
+
+    // Step 4: Update the gallery record
+    const updatedGallery = await prisma.gallery.update({
+      where: { galleryId },
+      data: { images: updatedImages },
+    });
+
+    // Step 5: Return success
+    return reply.code(200).send({
+      message: "Image deleted successfully",
+      updatedGallery,
+    });
+  } catch (error) {
+    console.error("Error deleting gallery image:", error);
+    return reply.code(500).send({
+      error: "Failed to delete image",
       message: error.message,
     });
   }
@@ -295,77 +450,6 @@ export const likePost = async (req, res) => {
     return res.status(500).send("Failed to update like status");
   }
 };
-
-export const likeGallery = async (req, res) => {
-  const { galleryId } = req.body;
-  const googleId = req.user.sub;
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { googleId },
-      select: { userId: true },
-    });
-
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-
-    // Fetch gallery details
-    const gallery = await prisma.gallery.findUnique({
-      where: { galleryId },
-      select: { likes: true },
-    });
-
-    if (!gallery) {
-      return res.status(404).send("Gallery not found");
-    }
-
-    // Check if user has already liked this gallery
-    const userLiked = await prisma.galleryLike.findFirst({
-      where: {
-        galleryId,
-        userId: user.userId,
-      },
-    });
-
-    if (userLiked) {
-      // Unlike
-      await prisma.galleryLike.delete({
-        where: { id: userLiked.id },
-      });
-
-      await prisma.gallery.update({
-        where: { galleryId },
-        data: {
-          likes: { decrement: 1 },
-        },
-      });
-
-      return res.status(200).send("Unliked");
-    } else {
-      // Like
-      await prisma.galleryLike.create({
-        data: {
-          userId: user.userId,
-          galleryId,
-        },
-      });
-
-      await prisma.gallery.update({
-        where: { galleryId },
-        data: {
-          likes: { increment: 1 },
-        },
-      });
-
-      return res.status(200).send("Liked");
-    }
-  } catch (error) {
-    console.error("Gallery like error:", error);
-    return res.status(500).send("Failed to update like status");
-  }
-};
-
 
 // [GET] http://localhost:8000/api/post/getHomePosts
 // Data required: postId
