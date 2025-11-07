@@ -110,7 +110,7 @@ export default async function (fastify, opts) {
 
   fastify.post("/creategallery", { preHandler: auth }, createGallery);
 
-  fastify.post("/gallery/likeGallery", { preHandler: auth }, likeGallery);
+  fastify.post("/likeGallery", { preHandler: auth }, likeGallery);
 
   fastify.delete("/galleries/:galleryId", { preHandler: auth }, deleteGallery);
 
