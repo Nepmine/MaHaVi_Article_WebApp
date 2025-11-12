@@ -471,20 +471,12 @@ export const getHomePosts = async (req, res) => {
         createdAt: true,
         updatedAt: true,
         trending: true,
-        article: true,
         category: true,
 
         // include comments with only the fields we want
         comments: {
           select: {
             commentId: true,
-          },
-        },
-
-        // optionally include a small author object (instead of just authorId)
-        author: {
-          select: {
-            authorId: true,
           },
         },
       },

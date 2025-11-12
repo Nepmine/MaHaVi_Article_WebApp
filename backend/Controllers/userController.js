@@ -12,7 +12,6 @@ export const userDetails = async (req, res) => {
 
 // [GET] http://localhost:8000/api/user/userLogin
 export const userLogin = async (req, res) => {
-  console.log("\nUser loged in .. Hello, ", req.user, req.body);
   if (!req.user?.email_verified)
     return res.status(401).send("User not signed in or invalid token !!");
   const { sub, email, name, given_name, picture } = req.user;
@@ -53,8 +52,7 @@ export const makeAuthor = async (req, res) => {
     return res.status(401).send("User not signed in or invalid token !!");
   }
 
-  const { sub, email, name, given_name, picture } = req.user;
-  const { secret } = req.body;
+  const { secret, authorEmail } = req.body;
 
   if (secret !== process.env.AUTHOR_SECRET) {
     return res.status(403).send("Unauthorized !!");
@@ -62,22 +60,16 @@ export const makeAuthor = async (req, res) => {
 
   try {
     // 1. Find or create the user
-    let user = await prisma.user.upsert({
-      where: { googleId: sub },
-      update: {}, // if found, keep as is
-      create: {
-        googleId: sub,
-        email,
-        name,
-        givenName: given_name,
-        photoUrl: picture,
-      },
+    let user = await prisma.user.findFirst({
+      where: { email: authorEmail },
     });
+
+    if (!user) return res.status(404).send("User not found !");
 
     // 2. Find or create the author linked to this user
     const author = await prisma.author.upsert({
-      where: { userId: user.userId }, // since userId is unique
-      update: {}, // no changes if already exists
+      where: { userId: user.userId },
+      update: {},
       create: {
         userId: user.userId,
       },
