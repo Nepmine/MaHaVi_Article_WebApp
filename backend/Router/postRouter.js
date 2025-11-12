@@ -17,6 +17,8 @@ import {
   deleteGallery,
   deleteGalleryImage,
   likeGallery,
+  getRecentNews,
+  getCategory,
 } from "../Controllers/postController.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -29,6 +31,10 @@ const postSchema = {
       title: { type: "string" },
       headline: { type: "string" },
       frontImageUrl: { type: "string" },
+      category: {
+        type: "array",
+        items: { type: "string" },
+      },
       content: { type: "string" },
     },
   },
@@ -81,6 +87,12 @@ export default async function (fastify, opts) {
 
   // [GET] http://localhost:8000/api/post/getHomePosts
   fastify.get("/getHomePosts", getHomePosts);
+
+  // [GET] http://localhost:8000/api/post/getRecentNews
+  fastify.get("/getRecentNews/:recentCount", getRecentNews);
+
+  // [GET] http://localhost:8000/api/post/getCategory
+  fastify.get("/getCategory/:category", getCategory);
 
   // [GET] http://localhost:8000/api/post/getPost/{postId}
   fastify.get("/getPost/:postId", getPost);

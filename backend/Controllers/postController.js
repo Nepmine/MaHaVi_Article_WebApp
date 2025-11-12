@@ -25,7 +25,7 @@ export const createPost = async (req, reply) => {
       return reply.code(401).send("You don't have permission !!");
 
     // [Modified] Parse and normalize content (array of segments)
-    const { title, headline, frontImageUrl, content } = req.body;
+    const { title, headline, frontImageUrl, content, category } = req.body;
 
     // [Modified] Save post with proper schema mapping
     const serverResponse = await prisma.post.create({
@@ -36,6 +36,7 @@ export const createPost = async (req, reply) => {
         content, // [Modified] use updated segments, not original content
         author: { connect: { authorId: userResponse.authorProfile.authorId } }, // [Added] connect post to author
         article: type == "article",
+        category,
       },
     });
 
@@ -299,7 +300,8 @@ export const updatePost = async (req, reply) => {
       return reply.code(401).send("You don't have permission !!");
 
     // [Modified] Extract postId from body
-    const { postId, title, headline, frontImageUrl, content } = req.body;
+    const { postId, title, headline, frontImageUrl, content, category } =
+      req.body;
 
     // [Added] Check if postId belongs to this author
     const isOwner = userResponse.authorProfile.posts.some(
@@ -315,6 +317,7 @@ export const updatePost = async (req, reply) => {
         headline,
         frontImageUrl,
         content,
+        category,
         updatedAt: new Date(),
       },
     });
@@ -469,6 +472,7 @@ export const getHomePosts = async (req, res) => {
         updatedAt: true,
         trending: true,
         article: true,
+        category: true,
 
         // include comments with only the fields we want
         comments: {
@@ -806,6 +810,55 @@ export const allArticles = async (req, reply) => {
         trending: true,
         comments: { select: { commentId: true } },
         author: { select: { authorId: true } },
+      },
+    });
+    return reply.status(200).send(posts); // [Modified] changed res → reply
+  } catch (ex) {
+    console.log("Exception while fetching articles ...", ex);
+    return reply.status(500).send("Internal Server Error fetching articles"); // [Modified]
+  }
+};
+
+// [GET] http://localhost:8000/api/post/getRecentNews/{recentCount}
+// Data required: not(postId)  ::  likes accroding to liked post stored in database
+export const getRecentNews = async (req, reply) => {
+  try {
+    const posts = await prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        postId: true,
+        title: true,
+        headline: true,
+        frontImageUrl: true,
+        createdAt: true,
+      },
+      take: parseInt(req.params.recentCount) || 3,
+    });
+    return reply.status(200).send(posts); // [Modified] changed res → reply
+  } catch (ex) {
+    console.log("Exception while fetching recent articles ...", ex);
+    return reply.status(500).send("Internal Server Error fetching articles"); // [Modified]
+  }
+};
+
+// [GET] http://localhost:8000/api/post/getCategory/{category}
+// Data required: not(postId)  ::  likes accroding to liked post stored in database
+export const getCategory = async (req, reply) => {
+  try {
+    const posts = await prisma.post.findMany({
+      where: {
+        category: {
+          has: req.params.category,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        postId: true,
+        title: true,
+        headline: true,
+        frontImageUrl: true,
+        likes: true,
+        createdAt: true,
       },
     });
     return reply.status(200).send(posts); // [Modified] changed res → reply
