@@ -207,11 +207,13 @@ export const deleteGallery = async (req, reply) => {
       return reply.code(404).send({ error: "No gallery found with that ID" });
     }
 
-    const deletedGallery = await prisma.gallery.delete({
+    // 1️⃣ Delete all likes FIRST
+    await prisma.galleryLike.deleteMany({
       where: { galleryId },
     });
 
-    await prisma.galleryLike.deleteMany({
+    // 2️⃣ Now safely delete the gallery
+    const deletedGallery = await prisma.gallery.delete({
       where: { galleryId },
     });
 
@@ -227,6 +229,7 @@ export const deleteGallery = async (req, reply) => {
     });
   }
 };
+
 
 // [DELETE] /api/post/deleteGalleryImage/:galleryId
 export const deleteGalleryImage = async (req, reply) => {

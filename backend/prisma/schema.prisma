@@ -95,7 +95,7 @@ model GalleryLike {
   galleryId String @db.ObjectId
 
   user    User    @relation(fields: [userId], references: [userId])
-  gallery Gallery @relation(fields: [galleryId], references: [galleryId])
+gallery Gallery @relation(fields: [galleryId], references: [galleryId], onDelete: Cascade)
 
   @@unique([userId, galleryId]) // prevent duplicate likes
 }
